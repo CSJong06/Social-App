@@ -7,32 +7,35 @@ export async function POST(request) {
   try {
     await connectDB();
 
-    const { name, email, password } = await request.json();
+    const { email, password } = await request.json();
 
     // Validate input
-    if (!name || !email || !password) {
+    if (!email || !password) {
       return NextResponse.json(
-        { error: 'Please provide all required fields' },
+        { error: 'Please provide email and password' },
         { status: 400 }
       );
     }
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    // Find user and include password for comparison
+    const user = await User.findOne({ email }).select('+password');
     
-    if (existingUser) {
+    if (!user) {
       return NextResponse.json(
-        { error: 'Email already registered' },
-        { status: 400 }
+        { error: 'Invalid credentials' },
+        { status: 401 }
       );
     }
 
-    // Create new user
-    const user = await User.create({
-      name,
-      email,
-      password,
-    });
+    // Compare password
+    const isMatch = await user.comparePassword(password);
+    
+    if (!isMatch) {
+      return NextResponse.json(
+        { error: 'Invalid credentials' },
+        { status: 401 }
+      );
+    }
 
     // Create JWT token
     const token = jwt.sign(
@@ -51,15 +54,7 @@ export async function POST(request) {
       }
     });
   } catch (error) {
-    console.error('Registration error:', error);
-    
-    if (error.code === 11000) {
-      return NextResponse.json(
-        { error: 'Email already registered' },
-        { status: 400 }
-      );
-    }
-
+    console.error('Login error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

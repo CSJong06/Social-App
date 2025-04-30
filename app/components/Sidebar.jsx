@@ -2,10 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '../lib/auth';
 import { 
   ChartBarIcon,
   FolderIcon, 
   UserCircleIcon,
+  ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline';
 
 const socialStats = [
@@ -21,6 +23,12 @@ const navigation = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { user, loading, logout } = useAuth();
+
+  // Don't show sidebar on auth pages or when not authenticated
+  if (pathname.startsWith('/auth') || !user?.isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="flex flex-col w-64 bg-white border-r">
@@ -96,6 +104,20 @@ export default function Sidebar() {
             );
           })}
         </nav>
+
+        {/* Logout Button */}
+        <div className="px-3 mt-auto">
+          <button
+            onClick={logout}
+            className="w-full flex items-center px-2 py-2 text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700 rounded-md group"
+          >
+            <ArrowRightOnRectangleIcon
+              className="mr-3 flex-shrink-0 h-6 w-6 text-red-400 group-hover:text-red-500"
+              aria-hidden="true"
+            />
+            Logout
+          </button>
+        </div>
       </div>
     </div>
   );

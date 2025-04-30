@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Line } from 'react-chartjs-2';
+import { useAuth } from '../lib/auth';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -99,6 +100,7 @@ const chartData = {
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('Followers');
+  const { logout } = useAuth();
 
   const options = {
     responsive: true,
