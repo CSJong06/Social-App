@@ -25,52 +25,6 @@ ChartJS.register(
   Legend
 );
 
-const chartData = {
-  followers: {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-    datasets: [
-      {
-        label: 'Followers',
-        data: [100, 200, 300, 400, 500, 600],
-        borderColor: 'rgb(147, 197, 253)',
-        backgroundColor: 'rgba(147, 197, 253, 0.1)',
-        tension: 0.4,
-      }
-    ],
-  },
-  interactions: {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-    datasets: [
-      {
-        label: 'Likes',
-        data: [1000, 2000, 3000, 4000, 5000, 6000],
-        borderColor: 'rgb(252, 165, 165)',
-        backgroundColor: 'rgba(252, 165, 165, 0.1)',
-        tension: 0.4,
-      },
-      {
-        label: 'Comments',
-        data: [100, 200, 300, 400, 500, 600],
-        borderColor: 'rgb(167, 243, 208)',
-        backgroundColor: 'rgba(167, 243, 208, 0.1)',
-        tension: 0.4,
-      }
-    ],
-  },
-  impressions: {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-    datasets: [
-      {
-        label: 'Views',
-        data: [5000, 10000, 15000, 20000, 25000, 30000],
-        borderColor: 'rgb(216, 180, 254)',
-        backgroundColor: 'rgba(216, 180, 254, 0.1)',
-        tension: 0.4,
-      }
-    ],
-  }
-};
-
 const options = {
   responsive: true,
   plugins: {
@@ -92,19 +46,132 @@ const options = {
 export default function TikTok() {
   const { user, loading } = useAuth();
   const [isConnected, setIsConnected] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
   const [activeTab, setActiveTab] = useState('followers');
+  const [chartData, setChartData] = useState(null);
+  const [error, setError] = useState(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+  const connectPlatform = async () => {
+    try {
+      setIsConnecting(true);
+      setError(null);
+      
+      const response = await fetch('/api/analytics/connect', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ platform: 'tiktok' }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to connect TikTok');
+      }
+
+      setIsConnected(true);
+      fetchAnalyticsData();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const fetchAnalyticsData = async () => {
+    try {
+      const response = await fetch('/api/analytics/tiktok');
+      if (!response.ok) {
+        if (response.status === 404) {
+          setIsConnected(false);
+          setChartData(null);
+          return;
+        }
+        throw new Error('Failed to fetch analytics data');
+      }
+      const data = await response.json();
+      
+      if (!data.analytics || data.analytics.length === 0) {
+        setIsConnected(false);
+        setChartData(null);
+        return;
+      }
+      
+      // Transform the data for chart.js
+      const transformedData = {
+        followers: {
+          labels: data.analytics.map(item => {
+            const date = new Date(item.date);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          }),
+          datasets: [
+            {
+              label: 'Followers',
+              data: data.analytics.map(item => item.followers),
+              borderColor: 'rgb(147, 197, 253)',
+              backgroundColor: 'rgba(147, 197, 253, 0.1)',
+              tension: 0.4,
+            }
+          ],
+        },
+        interactions: {
+          labels: data.analytics.map(item => {
+            const date = new Date(item.date);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          }),
+          datasets: [
+            {
+              label: 'Likes',
+              data: data.analytics.map(item => item.likes),
+              borderColor: 'rgb(252, 165, 165)',
+              backgroundColor: 'rgba(252, 165, 165, 0.1)',
+              tension: 0.4,
+            },
+            {
+              label: 'Comments',
+              data: data.analytics.map(item => item.comments),
+              borderColor: 'rgb(167, 243, 208)',
+              backgroundColor: 'rgba(167, 243, 208, 0.1)',
+              tension: 0.4,
+            }
+          ],
+        },
+        impressions: {
+          labels: data.analytics.map(item => {
+            const date = new Date(item.date);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          }),
+          datasets: [
+            {
+              label: 'Views',
+              data: data.analytics.map(item => item.views),
+              borderColor: 'rgb(216, 180, 254)',
+              backgroundColor: 'rgba(216, 180, 254, 0.1)',
+              tension: 0.4,
+            }
+          ],
+        }
+      };
+
+      setChartData(transformedData);
+      setIsConnected(true);
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      setError('Failed to fetch analytics data');
+      setIsConnected(false);
+      setChartData(null);
+    } finally {
+      setIsInitialLoad(false);
+    }
+  };
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedConnections = localStorage.getItem('socialConnections');
-      if (savedConnections) {
-        const connections = JSON.parse(savedConnections);
-        setIsConnected(connections.tiktok);
-      }
+    if (user?.isAuthenticated) {
+      fetchAnalyticsData();
     }
-  }, []);
+  }, [user]);
 
-  if (loading) {
+  if (loading || (isInitialLoad && user?.isAuthenticated)) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -115,20 +182,27 @@ export default function TikTok() {
   if (!isConnected) {
     return (
       <div className="p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-semibold">TikTok Analytics</h1>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">TikTok Analytics</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Analyze your TikTok account's reach, engagement, and trending content performance.
+          </p>
         </div>
         <div className="bg-white rounded-lg shadow p-6 text-center">
           <h2 className="text-xl font-medium text-gray-900 mb-4">TikTok Not Connected</h2>
           <p className="text-gray-600 mb-6">
-            Please connect your TikTok account in the Profile section to view analytics.
+            Connect your TikTok account to view analytics.
           </p>
-          <Link
-            href="/profile"
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+          {error && (
+            <p className="text-red-500 mb-4">{error}</p>
+          )}
+          <button
+            onClick={connectPlatform}
+            disabled={isConnecting}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
           >
-            Go to Profile
-          </Link>
+            {isConnecting ? 'Connecting...' : 'Connect TikTok'}
+          </button>
         </div>
       </div>
     );
@@ -136,8 +210,11 @@ export default function TikTok() {
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold">TikTok Analytics</h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">TikTok Analytics</h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Analyze your TikTok account's reach, engagement, and trending content performance.
+        </p>
       </div>
 
       <div className="bg-white rounded-lg shadow">
@@ -178,14 +255,16 @@ export default function TikTok() {
 
         <div className="p-6">
           <div className="w-full h-[400px] max-h-[400px] overflow-hidden">
-            <Line 
-              options={{
-                ...options,
-                maintainAspectRatio: false,
-                responsive: true,
-              }} 
-              data={chartData[activeTab]} 
-            />
+            {chartData && (
+              <Line 
+                options={{
+                  ...options,
+                  maintainAspectRatio: false,
+                  responsive: true,
+                }} 
+                data={chartData[activeTab]} 
+              />
+            )}
           </div>
         </div>
       </div>

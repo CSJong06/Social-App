@@ -102,46 +102,15 @@ export default function Profile() {
     localStorage.setItem('socialConnections', JSON.stringify(socialConnections));
   }, [socialConnections]);
 
-  const handleConnect = async (platform) => {
-    if (socialConnections[platform]) {
-      setShowDisconnectConfirm(prev => ({ ...prev, [platform]: true }));
-      return;
-    }
-
-    setIsConnecting(prev => ({ ...prev, [platform]: true }));
-    
-    try {
-      const response = await fetch(`/api/users/social/${platform}/connect`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to connect ${platform}`);
-      }
-
-      setSocialConnections(prev => ({
-        ...prev,
-        [platform]: true
-      }));
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setIsConnecting(prev => ({ ...prev, [platform]: false }));
-    }
-  };
-
   const handleDisconnect = async (platform) => {
     try {
-      const response = await fetch(`/api/users/social/${platform}/disconnect`, {
+      const response = await fetch('/api/analytics/disconnect', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
+        body: JSON.stringify({ platform }),
       });
 
       if (!response.ok) {
@@ -153,8 +122,47 @@ export default function Profile() {
         [platform]: false
       }));
       setShowDisconnectConfirm(prev => ({ ...prev, [platform]: false }));
+      
+      // Force a refresh of the analytics data
+      window.location.reload();
     } catch (err) {
       setError(err.message);
+    }
+  };
+
+  const handleConnect = async (platform) => {
+    if (socialConnections[platform]) {
+      setShowDisconnectConfirm(prev => ({ ...prev, [platform]: true }));
+      return;
+    }
+
+    setIsConnecting(prev => ({ ...prev, [platform]: true }));
+    
+    try {
+      const response = await fetch('/api/analytics/connect', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ platform }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to connect ${platform}`);
+      }
+
+      setSocialConnections(prev => ({
+        ...prev,
+        [platform]: true
+      }));
+
+      // Force a refresh of the analytics data
+      window.location.reload();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsConnecting(prev => ({ ...prev, [platform]: false }));
     }
   };
 
