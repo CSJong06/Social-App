@@ -4,21 +4,22 @@ import { useState, useEffect } from 'react';
 import { UserCircleIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../lib/auth';
 import { useRouter } from 'next/navigation';
+import { dispatchPlatformUpdate } from '../lib/events';
 
 export default function Profile() {
   const { user } = useAuth();
   const router = useRouter();
   const [userData, setUserData] = useState({
-    name: '',
+    username: '',
     email: '',
     password: '********',
   });
   const [editedData, setEditedData] = useState({
-    name: '',
+    username: '',
     email: '',
   });
   const [isEditing, setIsEditing] = useState({
-    name: false,
+    username: false,
     email: false,
   });
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
@@ -33,6 +34,27 @@ export default function Profile() {
   });
   const [passwordError, setPasswordError] = useState(null);
 
+  // Initialize state for social connections
+  const [socialConnections, setSocialConnections] = useState({
+    youtube: false,
+    instagram: false,
+    tiktok: false
+  });
+
+  const [isConnecting, setIsConnecting] = useState({
+    youtube: false,
+    instagram: false,
+    tiktok: false
+  });
+
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showDisconnectConfirm, setShowDisconnectConfirm] = useState({
+    youtube: false,
+    instagram: false,
+    tiktok: false
+  });
+
+  // Fetch user data and connection status
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -49,14 +71,22 @@ export default function Profile() {
 
         const data = await response.json();
         setUserData({
-          name: data.name,
+          username: data.username,
           email: data.email,
           password: '********',
         });
         setEditedData({
-          name: data.name,
+          username: data.username,
           email: data.email,
         });
+
+        // Update social connections based on user's connectedPlatforms
+        const status = {
+          youtube: data.connectedPlatforms?.includes('youtube') || false,
+          instagram: data.connectedPlatforms?.includes('instagram') || false,
+          tiktok: data.connectedPlatforms?.includes('tiktok') || false
+        };
+        setSocialConnections(status);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -66,41 +96,6 @@ export default function Profile() {
 
     fetchUserData();
   }, []);
-
-  // Initialize state with localStorage data if available
-  const [socialConnections, setSocialConnections] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const savedConnections = localStorage.getItem('socialConnections');
-      return savedConnections ? JSON.parse(savedConnections) : {
-        youtube: false,
-        instagram: false,
-        tiktok: false
-      };
-    }
-    return {
-      youtube: false,
-      instagram: false,
-      tiktok: false
-    };
-  });
-
-  const [isConnecting, setIsConnecting] = useState({
-    youtube: false,
-    instagram: false,
-    tiktok: false
-  });
-
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
-  const [showDisconnectConfirm, setShowDisconnectConfirm] = useState({
-    youtube: false,
-    instagram: false,
-    tiktok: false
-  });
-
-  // Save social connections to localStorage when they change
-  useEffect(() => {
-    localStorage.setItem('socialConnections', JSON.stringify(socialConnections));
-  }, [socialConnections]);
 
   const handleDisconnect = async (platform) => {
     try {
@@ -117,14 +112,19 @@ export default function Profile() {
         throw new Error(`Failed to disconnect ${platform}`);
       }
 
-      setSocialConnections(prev => ({
-        ...prev,
-        [platform]: false
-      }));
+      const data = await response.json();
+      
+      // Update local state based on server response
+      const status = {
+        youtube: data.connectedPlatforms?.includes('youtube') || false,
+        instagram: data.connectedPlatforms?.includes('instagram') || false,
+        tiktok: data.connectedPlatforms?.includes('tiktok') || false
+      };
+      setSocialConnections(status);
       setShowDisconnectConfirm(prev => ({ ...prev, [platform]: false }));
       
-      // Force a refresh of the analytics data
-      window.location.reload();
+      // Dispatch platform update event
+      dispatchPlatformUpdate();
     } catch (err) {
       setError(err.message);
     }
@@ -152,13 +152,18 @@ export default function Profile() {
         throw new Error(`Failed to connect ${platform}`);
       }
 
-      setSocialConnections(prev => ({
-        ...prev,
-        [platform]: true
-      }));
-
-      // Force a refresh of the analytics data
-      window.location.reload();
+      const data = await response.json();
+      
+      // Update local state based on server response
+      const status = {
+        youtube: data.connectedPlatforms?.includes('youtube') || false,
+        instagram: data.connectedPlatforms?.includes('instagram') || false,
+        tiktok: data.connectedPlatforms?.includes('tiktok') || false
+      };
+      setSocialConnections(status);
+      
+      // Dispatch platform update event
+      dispatchPlatformUpdate();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -168,7 +173,7 @@ export default function Profile() {
 
   const handleReset = async () => {
     try {
-      const response = await fetch('/api/users/social/reset', {
+      const response = await fetch('/api/analytics/reset', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -180,13 +185,16 @@ export default function Profile() {
         throw new Error('Failed to reset connections');
       }
 
+      // Reset social connections state
       setSocialConnections({
         youtube: false,
         instagram: false,
         tiktok: false
       });
-      localStorage.removeItem('socialConnections');
       setShowResetConfirm(false);
+      
+      // Dispatch platform update event
+      dispatchPlatformUpdate();
     } catch (err) {
       setError(err.message);
     }
@@ -231,7 +239,7 @@ export default function Profile() {
         ...editedData
       }));
       setIsEditing({
-        name: false,
+        username: false,
         email: false,
       });
       setShowSaveConfirm(false);
@@ -474,16 +482,16 @@ export default function Profile() {
                   <div className="relative">
                     <input
                       type="text"
-                      value={isEditing.name ? editedData.name : userData.name}
-                      onChange={(e) => setEditedData(prev => ({ ...prev, name: e.target.value }))}
-                      readOnly={!isEditing.name}
+                      value={isEditing.username ? editedData.username : userData.username}
+                      onChange={(e) => setEditedData(prev => ({ ...prev, username: e.target.value }))}
+                      readOnly={!isEditing.username}
                       className={`w-full px-3 py-2 border rounded-md shadow-sm ${
-                        isEditing.name 
+                        isEditing.username 
                           ? 'border-indigo-300 focus:ring-indigo-500 focus:border-indigo-500' 
                           : 'border-gray-300 bg-gray-50'
                       }`}
                     />
-                    {isEditing.name ? (
+                    {isEditing.username ? (
                       <div className="absolute right-0 top-0 h-full flex items-center pr-2 space-x-1">
                         <button
                           onClick={() => setShowSaveConfirm(true)}
@@ -492,7 +500,7 @@ export default function Profile() {
                           ✓
                         </button>
                         <button
-                          onClick={() => handleCancel('name')}
+                          onClick={() => handleCancel('username')}
                           className="text-red-600 hover:text-red-700"
                         >
                           ✕
@@ -500,7 +508,7 @@ export default function Profile() {
                       </div>
                     ) : (
                       <button
-                        onClick={() => handleEdit('name')}
+                        onClick={() => handleEdit('username')}
                         className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       >
                         ✎

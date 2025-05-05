@@ -33,7 +33,7 @@ export default function RegisterPage() {
 
     try {
       await register({
-        name: formData.username,
+        username: formData.username,
         email: formData.email,
         password: formData.password,
       });
@@ -41,6 +41,8 @@ export default function RegisterPage() {
       const errorMessage = err.message || '';
       if (errorMessage.includes('Email already registered') || errorMessage.includes('email already exists')) {
         setError('This email address is already registered. Please try logging in instead.');
+      } else if (errorMessage.includes('Username already taken')) {
+        setError('This username is already taken. Please choose a different one.');
       } else if (errorMessage.includes('Password should be at least 6 characters')) {
         setError('Password must be at least 6 characters long');
       } else {

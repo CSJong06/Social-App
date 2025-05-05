@@ -5,7 +5,7 @@ import User from '@/app/models/User';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 
-export async function POST(request) {
+export async function POST() {
   try {
     // Get the token from cookies
     const cookieStore = cookies();
@@ -22,15 +22,6 @@ export async function POST(request) {
     const decoded = jwt.verify(token.value, process.env.JWT_SECRET);
     const userId = decoded.userId;
 
-    const { platform } = await request.json();
-    
-    if (!['youtube', 'instagram', 'tiktok'].includes(platform)) {
-      return NextResponse.json(
-        { error: 'Invalid platform' },
-        { status: 400 }
-      );
-    }
-
     await connectDB();
 
     // Update user's connected platforms
@@ -42,23 +33,25 @@ export async function POST(request) {
       );
     }
 
-    // Remove platform from connectedPlatforms
-    user.connectedPlatforms = user.connectedPlatforms.filter(p => p !== platform);
+    // Clear all connected platforms
+    user.connectedPlatforms = [];
     await user.save();
 
-    // Delete all analytics data for this platform and user
-    await MockAnalytics.deleteMany({ 
-      platform,
-      userId 
+    // Drop the entire collection to ensure a clean slate
+    await MockAnalytics.collection.drop().catch(err => {
+      // Ignore error if collection doesn't exist
+      if (err.code !== 26) {
+        throw err;
+      }
     });
 
     return NextResponse.json({ 
       success: true,
-      message: `${platform} disconnected successfully`,
+      message: 'Database reset successfully',
       connectedPlatforms: user.connectedPlatforms
     });
   } catch (error) {
-    console.error('Error disconnecting platform:', error);
+    console.error('Error resetting database:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

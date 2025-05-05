@@ -14,6 +14,7 @@ import {
 } from 'chart.js';
 import { useAuth } from '../lib/auth';
 import Link from 'next/link';
+import { dispatchPlatformUpdate } from '../lib/events';
 
 ChartJS.register(
   CategoryScale,
@@ -71,6 +72,7 @@ export default function Instagram() {
 
       setIsConnected(true);
       fetchAnalyticsData();
+      dispatchPlatformUpdate();
     } catch (err) {
       setError(err.message);
     } finally {

@@ -2,9 +2,10 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 const userSchema = new mongoose.Schema({
-  name: {
+  username: {
     type: String,
-    required: [true, 'Please provide a name'],
+    required: [true, 'Please provide a username'],
+    unique: true,
     trim: true,
   },
   email: {
@@ -51,6 +52,11 @@ const userSchema = new mongoose.Schema({
       default: true
     }
   },
+  connectedPlatforms: {
+    type: [String],
+    enum: ['youtube', 'instagram', 'tiktok'],
+    default: []
+  },
   createdAt: {
     type: Date,
     default: Date.now,
@@ -59,6 +65,8 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+}, {
+  timestamps: true
 });
 
 // Hash password before saving

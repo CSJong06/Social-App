@@ -23,26 +23,26 @@ export async function GET() {
 
     await connectDB();
 
-    // Get the latest data for each platform
+    // Get the latest connection status for each platform
     const platforms = ['youtube', 'instagram', 'tiktok'];
-    const summary = {};
+    const status = {};
 
     for (const platform of platforms) {
+      // Find the most recent entry for this platform and user
       const latestData = await MockAnalytics.findOne({ 
         platform,
         userId
       })
         .sort({ date: -1 })
-        .select(platform === 'youtube' ? 'subscribers' : 'followers');
+        .select('isConnected');
 
-      summary[platform] = {
-        count: platform === 'youtube' ? latestData?.subscribers : latestData?.followers
-      };
+      // If no data exists or isConnected is false, the platform is disconnected
+      status[platform] = latestData?.isConnected === true;
     }
 
-    return NextResponse.json(summary);
+    return NextResponse.json(status);
   } catch (error) {
-    console.error('Error fetching summary:', error);
+    console.error('Error fetching connection status:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

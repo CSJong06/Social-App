@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../lib/auth';
+import { PLATFORM_UPDATE_EVENT } from '../lib/events';
 import { 
   ChartBarIcon,
   FolderIcon, 
@@ -77,24 +78,49 @@ export default function Sidebar() {
   const { user, loading, logout } = useAuth();
   const [socialStats, setSocialStats] = useState({});
   const [isLoading, setIsLoading] = useState(true);
+  const [connectedPlatforms, setConnectedPlatforms] = useState([]);
+
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      // Fetch user data to get connected platforms
+      const userResponse = await fetch('/api/users/me');
+      if (userResponse.ok) {
+        const userData = await userResponse.json();
+        setConnectedPlatforms(userData.connectedPlatforms || []);
+      }
+
+      // Fetch social stats
+      const statsResponse = await fetch('/api/analytics/summary');
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json();
+        setSocialStats(statsData);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchSocialStats = async () => {
-      try {
-        const response = await fetch('/api/analytics/summary');
-        if (response.ok) {
-          const data = await response.json();
-          setSocialStats(data);
-        }
-      } catch (error) {
-        console.error('Error fetching social stats:', error);
-      } finally {
-        setIsLoading(false);
-      }
+    // Initial data fetch
+    if (user?.isAuthenticated) {
+      fetchData();
+    }
+
+    // Add event listener for platform updates
+    const handlePlatformUpdate = () => {
+      fetchData();
     };
 
-    fetchSocialStats();
-  }, []);
+    window.addEventListener(PLATFORM_UPDATE_EVENT, handlePlatformUpdate);
+
+    // Cleanup event listener
+    return () => {
+      window.removeEventListener(PLATFORM_UPDATE_EVENT, handlePlatformUpdate);
+    };
+  }, [user?.isAuthenticated]); // Add user?.isAuthenticated as a dependency
 
   // Don't show sidebar on auth pages or when not authenticated
   if (pathname.startsWith('/auth') || !user?.isAuthenticated) {
@@ -129,33 +155,38 @@ export default function Sidebar() {
 
           {/* Indented Social Links */}
           <div className="ml-8">
-            {socialPlatforms.map((platform) => (
-              <Link
-                key={platform.name}
-                href={platform.href}
-                className={`flex items-center justify-between py-2 px-3 rounded-md mb-2 transition-colors duration-150 ${platform.color} ${
-                  pathname === platform.href
-                    ? platform.bgColor
-                    : platform.hoverBgColor
-                }`}
-              >
-                <div className="flex items-center space-x-2">
-                  <span>
-                    <platform.icon />
+            {socialPlatforms.map((platform) => {
+              const isConnected = connectedPlatforms.includes(platform.key);
+              const stats = socialStats[platform.key];
+              
+              return (
+                <Link
+                  key={platform.name}
+                  href={platform.href}
+                  className={`flex items-center justify-between py-2 px-3 rounded-md mb-2 transition-colors duration-150 ${platform.color} ${
+                    pathname === platform.href
+                      ? platform.bgColor
+                      : platform.hoverBgColor
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <span>
+                      <platform.icon />
+                    </span>
+                    <span className="text-sm font-medium">
+                      {platform.name}
+                    </span>
+                  </div>
+                  <span className={`text-sm font-semibold px-2 py-1 rounded ${
+                    pathname === platform.href 
+                      ? 'bg-white/50' 
+                      : 'bg-white/80'
+                  }`}>
+                    {isLoading ? '...' : isConnected ? formatCount(stats?.count) : 'Connect'}
                   </span>
-                  <span className="text-sm font-medium">
-                    {platform.name}
-                  </span>
-                </div>
-                <span className={`text-sm font-semibold px-2 py-1 rounded ${
-                  pathname === platform.href 
-                    ? 'bg-white/50' 
-                    : 'bg-white/80'
-                }`}>
-                  {isLoading ? '...' : formatCount(socialStats[platform.key]?.count)}
-                </span>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         </div>
 

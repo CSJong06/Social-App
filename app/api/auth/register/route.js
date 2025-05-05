@@ -2,15 +2,16 @@ import { NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import connectDB from '../../../lib/mongodb';
 import User from '../../../models/User';
+import mongoose from 'mongoose';
 
 export async function POST(request) {
   try {
     await connectDB();
 
-    const { name, email, password } = await request.json();
+    const { username, email, password } = await request.json();
 
     // Validate input
-    if (!name || !email || !password) {
+    if (!username || !email || !password) {
       return NextResponse.json(
         { error: 'Please provide all required fields' },
         { status: 400 }
@@ -18,18 +19,20 @@ export async function POST(request) {
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ 
+      $or: [{ email }, { username }]
+    });
     
     if (existingUser) {
       return NextResponse.json(
-        { error: 'Email already registered' },
+        { error: existingUser.email === email ? 'Email already registered' : 'Username already taken' },
         { status: 400 }
       );
     }
 
     // Create new user
     const user = await User.create({
-      name,
+      username,
       email,
       password,
     });
@@ -46,7 +49,7 @@ export async function POST(request) {
       token,
       user: {
         id: user._id,
-        name: user.name,
+        username: user.username,
         email: user.email,
       }
     });
