@@ -1,16 +1,12 @@
-# \[Project Title\]
+# Social Media Analytic Tracker
 
 ## Project Overview
 
-**Industry:** \[Banking/Technology/Healthcare/Construction/Automotive/Pharmaceutical\]  
-**Developer:** \[Your Name\]  
-**Completion Date:** \[MM/DD/YYYY\]  
-**GitHub Repository:** \[Link to your repository\]  
+**Industry:** Social Media, Marketing  
+**Developer:** Jamir Ong  
+**Completion Date:** \[MM/DD/YYYY\]    
 **Trello** \[Trello Board\]  
 **Live Demo:** \[Link to deployed application\]
-
-|  |
-| :---- |
 
 ## Business Problem
 
@@ -33,15 +29,15 @@
 
 ### Project Description
 
-\[Provide a high-level description of your solution in 1-2 paragraphs. Explain how it addresses the business problem and the approach you took.\]
+A comprehensive social media analytics platform that allows users to track and analyze their performance across multiple social media platforms including Instagram, TikTok, and YouTube. The application provides insights and metrics to help content creators and marketers optimize their social media strategy.
 
 ### Key Features
 
-* \[Feature 1\]  
-* \[Feature 2\]  
-* \[Feature 3\]  
-* \[Feature 4\]  
-* \[Feature 5\]
+* Multi-platform analytics tracking (Instagram, TikTok, YouTube)
+* User authentication and profile management
+* Dashboard with performance metrics
+* Project-based organization of social media campaigns
+* Data visualization using charts and graphs
 
 ### Value Proposition
 
@@ -53,14 +49,17 @@
 
 ### Technology Stack
 
-* **Frontend:** Next.js, React, \[UI Library\]  
-* **Styling:** \[Tailwind CSS/CSS Modules/etc.\]  
-* **Backend:** Next.js API Routes, \[Other services if applicable\]  
-* **Database:** \[MongoDB/PostgreSQL/Supabase/etc.\]  
-* **Authentication:** \[NextAuth.js/Auth0/Firebase/etc.\]  
-* **AI Services:** \[OpenAI API/Hugging Face/TensorFlow.js/etc.\]  
+* **Frontend:** Next.js 14, React 18
+* **Styling:** Tailwind CSS
+* **Backend:** Next.js API Routes
+* **Database:** MongoDB with Mongoose
+* **Authentication:** NextAuth.js
+* **Data Visualization:** Chart.js, React-Chartjs-2
 * **Deployment:** \[Vercel/Netlify/etc.\]  
-* **Other Tools:** \[List any other significant tools or libraries\]
+* **Other Tools:** 
+  - bcryptjs for password hashing
+  - jose and jsonwebtoken for JWT handling
+  - Heroicons for UI icons
 
 |  |
 | :---- |
@@ -69,18 +68,19 @@
 
 ### Wireframes & System Architecture
 
-\[ Include a diagram and description of your application's architecture\]  
-\[ Show the relationship between components, data flow, and integration points.\]
-
-| \[Simple architecture diagram or description goes here\] |
-| :---- |
+The application follows a modern Next.js architecture with the following key components:
+- App Router for page routing and API endpoints
+- MongoDB for data persistence
+- NextAuth.js for authentication
+- Client-side components for interactive features
+- Server-side components for data fetching and rendering
 
 ### Database Schema
 
-\[Describe your database structure. Include tables/collections, relationships, and key fields. Include a diagram.\]
-
-| \[Database schema diagram or code representation\] |
-| :---- |
+The application uses MongoDB with Mongoose for data modeling. Key collections include:
+- Users (authentication and profile data)
+- Projects (social media campaign organization)
+- Analytics (platform-specific metrics and data)
 
 ### AI Model Details
 
@@ -91,41 +91,30 @@
 
 ### Key Components and Code Snippets
 
-#### Component 1: \[Name\]
+#### Component 1: Authentication System
 
-\[Describe this component's purpose and functionality\]
+Secure user authentication using NextAuth.js with JWT tokens and bcrypt password hashing.
 
-| *// Key code snippet demonstrating functionality*  |
-| :---- |
+#### Component 2: Social Media Integration
 
-#### Component 2: \[Name\]
+Platform-specific integrations for Instagram, TikTok, and YouTube analytics tracking.
 
-\[Describe this component's purpose and functionality\]
+#### Component 3: Dashboard
 
-| *// Key code snippet demonstrating functionality*  |
-| :---- |
-
-#### AI Integration
-
-\[Show how AI is integrated into your application\]
-
-| *// Code snippet showing AI API call or integration*  |
-| :---- |
+Interactive dashboard with Chart.js visualizations for performance metrics.
 
 ### Authentication and Authorization
 
-\[Describe how user authentication works, user roles, and permission structure\]
+The application uses NextAuth.js for authentication with JWT tokens. User sessions are managed securely with proper encryption and token handling.
 
 ### API Routes
 
-\[List and describe your main API endpoints\]
-
 | Endpoint | Method | Purpose | Authentication Required |
 | :---- | :---- | :---- | :---- |
-| /api/resource | GET | Retrieves resources | Yes/No |
-| /api/resource | POST | Creates a new resource | Yes/No |
-| /api/resource/:id | PUT | Updates a resource | Yes/No |
-| /api/resource/:id | DELETE | Deletes a resource | Yes/No |
+| /api/auth/* | Various | Authentication endpoints | No |
+| /api/profile | GET/PUT | User profile management | Yes |
+| /api/projects | GET/POST | Project management | Yes |
+| /api/analytics/* | GET | Platform-specific analytics | Yes |
 
 |  |
 | :---- |
@@ -270,11 +259,35 @@ Screenshot description
 
 ### Setup Instructions
 
-\[Step-by-step instructions for setting up the project locally\]
+1. Clone the repository
+```bash
+git clone [repository URL]
+cd social-app
+```
 
-| *\# Clone the repository* git clone \[repository URL\] *\# Install dependencies* npm install *\# Set up environment variables* cp .env.example .env.local *\# Edit .env.local with your values* *\# Run development server* npm run dev |
-| :---- |
+2. Install dependencies
+```bash
+npm install
+```
+
+3. Set up environment variables
+Create a `.env.local` file in the root directory with the following variables:
+```
+MONGODB_URI=your_mongodb_connection_string
+NEXTAUTH_SECRET=your_nextauth_secret
+NEXTAUTH_URL=http://localhost:3000
+```
+
+4. Run development server
+```bash
+npm run dev
+```
+
+The application will be available at `http://localhost:3000`
 
 ### Additional Resources
 
-\[Links to relevant your YouTube Channel, documentation, tutorials, or resources\]  
+[Links to relevant documentation, tutorials, or resources]
+
+|  |
+| :---- |
