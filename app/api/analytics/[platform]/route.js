@@ -1,12 +1,23 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/app/lib/mongodb';
 import MockAnalytics from '@/app/models/MockAnalytics';
-import { generateMockSummary } from '@/app/lib/mockData';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request, { params }) {
   try {
+    const platform = params.platform;
+    
+    // Validate platform
+    if (!['youtube', 'instagram', 'tiktok'].includes(platform)) {
+      return NextResponse.json(
+        { error: 'Invalid platform' },
+        { status: 400 }
+      );
+    }
+
     // Get the token from cookies
     const cookieStore = cookies();
     const token = cookieStore.get('auth-token');
@@ -22,34 +33,24 @@ export async function GET(request, { params }) {
     const decoded = jwt.verify(token.value, process.env.JWT_SECRET);
     const userId = decoded.userId;
 
-    const { platform } = params;
-    
-    // Validate platform
-    const validPlatforms = ['youtube', 'instagram', 'tiktok'];
-    if (!validPlatforms.includes(platform)) {
-      return NextResponse.json(
-        { error: 'Invalid platform' },
-        { status: 400 }
-      );
-    }
-
     await connectDB();
 
-    // Get analytics data for the platform and user
+    // Get analytics data for the platform
     const analytics = await MockAnalytics.find({ 
       platform,
       userId
     })
-      .sort({ date: 1 })
-      .select('-_id -__v');
+      .sort({ date: -1 })
+      .limit(30);
 
-    // Get summary data
-    const summary = generateMockSummary(platform);
+    if (!analytics || analytics.length === 0) {
+      return NextResponse.json(
+        { error: 'No analytics data found' },
+        { status: 404 }
+      );
+    }
 
-    return NextResponse.json({
-      analytics,
-      summary
-    });
+    return NextResponse.json({ analytics });
   } catch (error) {
     console.error('Error fetching analytics:', error);
     return NextResponse.json(
