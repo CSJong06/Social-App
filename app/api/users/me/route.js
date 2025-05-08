@@ -4,6 +4,8 @@ import jwt from 'jsonwebtoken';
 import User from '@/app/models/User';
 import connectDB from '@/app/lib/mongodb';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     // Get the token from cookies
