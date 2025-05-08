@@ -7,9 +7,9 @@ import { useAuth } from '../lib/auth';
 import { PLATFORM_UPDATE_EVENT } from '../lib/events';
 import { 
   ChartBarIcon,
-  FolderIcon, 
-  UserCircleIcon,
+  UserIcon,
   ArrowRightOnRectangleIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline';
 
 const socialPlatforms = [
@@ -58,8 +58,8 @@ const socialPlatforms = [
 ];
 
 const navigation = [
-  { name: 'Projects', href: '/projects', icon: FolderIcon },
-  { name: 'Profile', href: '/profile', icon: UserCircleIcon },
+  { name: 'Content Ideas', href: '/content-suggestions', icon: SparklesIcon },
+  { name: 'Profile', href: '/profile', icon: UserIcon },
 ];
 
 function formatCount(count) {

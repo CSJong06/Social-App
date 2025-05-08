@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Line } from 'react-chartjs-2';
+import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend
@@ -21,6 +22,7 @@ ChartJS.register(
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend
@@ -110,8 +112,8 @@ export default function TikTok() {
             {
               label: 'Followers',
               data: data.analytics.map(item => item.followers),
-              borderColor: 'rgb(147, 197, 253)',
-              backgroundColor: 'rgba(147, 197, 253, 0.1)',
+              borderColor: 'rgb(75, 85, 99)',
+              backgroundColor: 'rgba(75, 85, 99, 0.1)',
               tension: 0.4,
             }
           ],
@@ -125,15 +127,15 @@ export default function TikTok() {
             {
               label: 'Likes',
               data: data.analytics.map(item => item.likes),
-              borderColor: 'rgb(252, 165, 165)',
-              backgroundColor: 'rgba(252, 165, 165, 0.1)',
+              borderColor: 'rgb(55, 65, 81)',
+              backgroundColor: 'rgba(55, 65, 81, 0.8)',
               tension: 0.4,
             },
             {
               label: 'Comments',
               data: data.analytics.map(item => item.comments),
-              borderColor: 'rgb(167, 243, 208)',
-              backgroundColor: 'rgba(167, 243, 208, 0.1)',
+              borderColor: 'rgb(31, 41, 55)',
+              backgroundColor: 'rgba(31, 41, 55, 0.8)',
               tension: 0.4,
             }
           ],
@@ -147,8 +149,8 @@ export default function TikTok() {
             {
               label: 'Views',
               data: data.analytics.map(item => item.views),
-              borderColor: 'rgb(216, 180, 254)',
-              backgroundColor: 'rgba(216, 180, 254, 0.1)',
+              borderColor: 'rgb(107, 114, 128)',
+              backgroundColor: 'rgba(107, 114, 128, 0.1)',
               tension: 0.4,
             }
           ],
@@ -258,14 +260,25 @@ export default function TikTok() {
         <div className="p-6">
           <div className="w-full h-[400px] max-h-[400px] overflow-hidden">
             {chartData && (
-              <Line 
-                options={{
-                  ...options,
-                  maintainAspectRatio: false,
-                  responsive: true,
-                }} 
-                data={chartData[activeTab]} 
-              />
+              activeTab === 'interactions' ? (
+                <Bar 
+                  options={{
+                    ...options,
+                    maintainAspectRatio: false,
+                    responsive: true,
+                  }} 
+                  data={chartData[activeTab]} 
+                />
+              ) : (
+                <Line 
+                  options={{
+                    ...options,
+                    maintainAspectRatio: false,
+                    responsive: true,
+                  }} 
+                  data={chartData[activeTab]} 
+                />
+              )
             )}
           </div>
         </div>

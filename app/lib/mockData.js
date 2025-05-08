@@ -1,61 +1,70 @@
-export const generateMockData = (platform, days = 30) => {
+export const generateMockData = (platform, startDate, endDate) => {
   const data = [];
-  const today = new Date();
-  
-  // Base metrics for different platforms with more variation
+  const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+
+  // Base metrics with more variation
   const baseMetrics = {
-    instagram: {
-      followers: Math.floor(Math.random() * 5000) + 1000, // Random between 1000-6000
-      engagement: 0.05 + (Math.random() * 0.03), // Random between 0.05-0.08
-      posts: Math.floor(Math.random() * 5) + 1, // Random between 1-6
-      reach: Math.floor(Math.random() * 5000) + 1000, // Random between 1000-6000
-      likes: Math.floor(Math.random() * 500) + 100, // Random between 100-600
-      comments: Math.floor(Math.random() * 100) + 20 // Random between 20-120
-    },
     youtube: {
-      subscribers: Math.floor(Math.random() * 3000) + 500, // Random between 500-3500
-      views: Math.floor(Math.random() * 10000) + 2000, // Random between 2000-12000
-      watchTime: Math.floor(Math.random() * 5000) + 1000, // Random between 1000-6000
-      likes: Math.floor(Math.random() * 300) + 50 // Random between 50-350
+      subscribers: Math.floor(Math.random() * 1000) + 5000, // 5000-6000
+      views: Math.floor(Math.random() * 5000) + 10000, // 10000-15000
+      likes: Math.floor(Math.random() * 300) + 200, // 200-500
+      comments: Math.floor(Math.random() * 100) + 20, // 20-120
+    },
+    instagram: {
+      followers: Math.floor(Math.random() * 2000) + 8000, // 8000-10000
+      reach: Math.floor(Math.random() * 3000) + 5000, // 5000-8000
+      likes: Math.floor(Math.random() * 400) + 300, // 300-700
+      comments: Math.floor(Math.random() * 50) + 30, // 30-80
     },
     tiktok: {
-      followers: Math.floor(Math.random() * 8000) + 2000, // Random between 2000-10000
-      views: Math.floor(Math.random() * 20000) + 5000, // Random between 5000-25000
-      likes: Math.floor(Math.random() * 1000) + 300, // Random between 300-1300
-      comments: Math.floor(Math.random() * 200) + 50 // Random between 50-250
+      followers: Math.floor(Math.random() * 3000) + 7000, // 7000-10000
+      views: Math.floor(Math.random() * 8000) + 12000, // 12000-20000
+      likes: Math.floor(Math.random() * 500) + 400, // 400-900
+      comments: Math.floor(Math.random() * 100) + 50, // 50-150
     }
   };
 
   // Generate data for each day
-  for (let i = days - 1; i >= 0; i--) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - i);
+  for (let i = 0; i < days; i++) {
+    const currentDate = new Date(startDate);
+    currentDate.setDate(startDate.getDate() + i);
     
+    // Add weekly patterns (weekend boost)
+    const dayOfWeek = currentDate.getDay();
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const weekendMultiplier = isWeekend ? 1.3 : 1;
+
+    // Add random daily fluctuations
+    const dailyFluctuation = 0.8 + Math.random() * 0.4; // 0.8 to 1.2
+
+    // Add gradual growth trend
+    const growthTrend = 1 + (i / days) * 0.2; // 1 to 1.2 over the period
+
+    // Add occasional spikes (viral content)
+    const spikeChance = Math.random();
+    const spikeMultiplier = spikeChance > 0.95 ? 2 : 1; // 5% chance of viral content
+
     const dayData = {
-      date: date.toISOString().split('T')[0],
+      date: currentDate,
+      platform,
     };
 
-    // Add platform-specific metrics with some random variation
-    if (platform === 'instagram') {
-      const base = baseMetrics.instagram;
-      dayData.followers = Math.round(base.followers * (1 + (Math.random() * 0.1 - 0.05)));
-      dayData.engagement = base.engagement * (1 + (Math.random() * 0.2 - 0.1));
-      dayData.posts = Math.round(base.posts * (1 + (Math.random() * 0.5 - 0.25)));
-      dayData.reach = Math.round(base.reach * (1 + (Math.random() * 0.2 - 0.1)));
-      dayData.likes = Math.round(base.likes * (1 + (Math.random() * 0.3 - 0.15)));
-      dayData.comments = Math.round(base.comments * (1 + (Math.random() * 0.4 - 0.2)));
-    } else if (platform === 'youtube') {
-      const base = baseMetrics.youtube;
-      dayData.subscribers = Math.round(base.subscribers * (1 + (Math.random() * 0.1 - 0.05)));
-      dayData.views = Math.round(base.views * (1 + (Math.random() * 0.2 - 0.1)));
-      dayData.watchTime = Math.round(base.watchTime * (1 + (Math.random() * 0.2 - 0.1)));
-      dayData.likes = Math.round(base.likes * (1 + (Math.random() * 0.3 - 0.15)));
+    // Apply variations to each metric
+    if (platform === 'youtube') {
+      dayData.subscribers = Math.floor(baseMetrics.youtube.subscribers * weekendMultiplier * dailyFluctuation * growthTrend * spikeMultiplier);
+      dayData.views = Math.floor(baseMetrics.youtube.views * weekendMultiplier * dailyFluctuation * growthTrend * spikeMultiplier);
+      dayData.likes = Math.floor(baseMetrics.youtube.likes * weekendMultiplier * dailyFluctuation * growthTrend * spikeMultiplier);
+      dayData.comments = Math.floor(baseMetrics.youtube.comments * weekendMultiplier * dailyFluctuation * growthTrend * spikeMultiplier);
+    } else if (platform === 'instagram') {
+      dayData.followers = Math.floor(baseMetrics.instagram.followers * weekendMultiplier * dailyFluctuation * growthTrend * spikeMultiplier);
+      dayData.reach = Math.floor(baseMetrics.instagram.reach * weekendMultiplier * dailyFluctuation * growthTrend * spikeMultiplier);
+      dayData.likes = Math.floor(baseMetrics.instagram.likes * weekendMultiplier * dailyFluctuation * growthTrend * spikeMultiplier);
+      dayData.comments = Math.floor(baseMetrics.instagram.comments * weekendMultiplier * dailyFluctuation * growthTrend * spikeMultiplier);
     } else if (platform === 'tiktok') {
-      const base = baseMetrics.tiktok;
-      dayData.followers = Math.round(base.followers * (1 + (Math.random() * 0.1 - 0.05)));
-      dayData.views = Math.round(base.views * (1 + (Math.random() * 0.2 - 0.1)));
-      dayData.likes = Math.round(base.likes * (1 + (Math.random() * 0.3 - 0.15)));
-      dayData.comments = Math.round(base.comments * (1 + (Math.random() * 0.4 - 0.2)));
+      dayData.followers = Math.floor(baseMetrics.tiktok.followers * weekendMultiplier * dailyFluctuation * growthTrend * spikeMultiplier);
+      dayData.views = Math.floor(baseMetrics.tiktok.views * weekendMultiplier * dailyFluctuation * growthTrend * spikeMultiplier);
+      dayData.likes = Math.floor(baseMetrics.tiktok.likes * weekendMultiplier * dailyFluctuation * growthTrend * spikeMultiplier);
+      dayData.comments = Math.floor(baseMetrics.tiktok.comments * weekendMultiplier * dailyFluctuation * growthTrend * spikeMultiplier);
     }
 
     data.push(dayData);

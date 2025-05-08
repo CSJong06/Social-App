@@ -57,7 +57,10 @@ export async function POST(request) {
 
     if (!existingData) {
       // Generate and save new mock data for this platform
-      const mockData = generateMockData(platform);
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 30); // Generate 30 days of data
+      const mockData = generateMockData(platform, startDate, endDate);
       const formattedData = mockData.map(item => ({
         userId,
         platform,

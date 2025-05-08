@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Line } from 'react-chartjs-2';
+import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend
@@ -21,6 +22,7 @@ ChartJS.register(
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend
@@ -95,9 +97,11 @@ export default function YouTube() {
 
   const fetchAnalyticsData = async () => {
     try {
+      console.log('Fetching YouTube analytics data...');
       const response = await fetch('/api/analytics/youtube');
       if (!response.ok) {
         if (response.status === 404) {
+          console.log('No analytics data found (404)');
           setIsConnected(false);
           setChartData(null);
           return;
@@ -105,8 +109,10 @@ export default function YouTube() {
         throw new Error('Failed to fetch analytics data');
       }
       const data = await response.json();
+      console.log('Received analytics data:', data);
       
       if (!data.analytics || data.analytics.length === 0) {
+        console.log('No analytics data in response');
         setIsConnected(false);
         setChartData(null);
         return;
@@ -123,8 +129,8 @@ export default function YouTube() {
             {
               label: 'Subscribers',
               data: data.analytics.map(item => item.subscribers),
-              borderColor: 'rgb(252, 165, 165)',
-              backgroundColor: 'rgba(252, 165, 165, 0.1)',
+              borderColor: 'rgb(220, 38, 38)',
+              backgroundColor: 'rgba(220, 38, 38, 0.1)',
               tension: 0.4,
             }
           ],
@@ -138,8 +144,15 @@ export default function YouTube() {
             {
               label: 'Likes',
               data: data.analytics.map(item => item.likes),
-              borderColor: 'rgb(147, 197, 253)',
-              backgroundColor: 'rgba(147, 197, 253, 0.1)',
+              borderColor: 'rgb(239, 68, 68)',
+              backgroundColor: 'rgba(239, 68, 68, 0.8)',
+              tension: 0.4,
+            },
+            {
+              label: 'Comments',
+              data: data.analytics.map(item => item.comments),
+              borderColor: 'rgb(153, 27, 27)',
+              backgroundColor: 'rgba(153, 27, 27, 0.8)',
               tension: 0.4,
             }
           ],
@@ -153,14 +166,15 @@ export default function YouTube() {
             {
               label: 'Views',
               data: data.analytics.map(item => item.views),
-              borderColor: 'rgb(251, 191, 36)',
-              backgroundColor: 'rgba(251, 191, 36, 0.1)',
+              borderColor: 'rgb(239, 68, 68)',
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
               tension: 0.4,
             }
           ],
         }
       };
 
+      console.log('Transformed data:', transformedData);
       setChartData(transformedData);
       setIsConnected(true);
     } catch (error) {
@@ -264,14 +278,25 @@ export default function YouTube() {
         <div className="p-6">
           <div className="w-full h-[400px] max-h-[400px] overflow-hidden">
             {chartData && (
-              <Line 
-                options={{
-                  ...options,
-                  maintainAspectRatio: false,
-                  responsive: true,
-                }} 
-                data={chartData[activeTab]} 
-              />
+              activeTab === 'interactions' ? (
+                <Bar 
+                  options={{
+                    ...options,
+                    maintainAspectRatio: false,
+                    responsive: true,
+                  }} 
+                  data={chartData[activeTab]} 
+                />
+              ) : (
+                <Line 
+                  options={{
+                    ...options,
+                    maintainAspectRatio: false,
+                    responsive: true,
+                  }} 
+                  data={chartData[activeTab]} 
+                />
+              )
             )}
           </div>
         </div>

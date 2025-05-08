@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Line } from 'react-chartjs-2';
+import { Line, Bar } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend
@@ -21,6 +22,7 @@ ChartJS.register(
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
   Title,
   Tooltip,
   Legend
@@ -125,15 +127,15 @@ export default function Instagram() {
             {
               label: 'Likes',
               data: data.analytics.map(item => item.likes),
-              borderColor: 'rgb(244, 114, 182)',
-              backgroundColor: 'rgba(244, 114, 182, 0.1)',
+              borderColor: 'rgb(236, 72, 153)',
+              backgroundColor: 'rgba(236, 72, 153, 0.8)',
               tension: 0.4,
             },
             {
               label: 'Comments',
               data: data.analytics.map(item => item.comments),
-              borderColor: 'rgb(167, 243, 208)',
-              backgroundColor: 'rgba(167, 243, 208, 0.1)',
+              borderColor: 'rgb(168, 85, 247)',
+              backgroundColor: 'rgba(168, 85, 247, 0.8)',
               tension: 0.4,
             }
           ],
@@ -258,14 +260,25 @@ export default function Instagram() {
         <div className="p-6">
           <div className="w-full h-[400px] max-h-[400px] overflow-hidden">
             {chartData && (
-              <Line 
-                options={{
-                  ...options,
-                  maintainAspectRatio: false,
-                  responsive: true,
-                }} 
-                data={chartData[activeTab]} 
-              />
+              activeTab === 'interactions' ? (
+                <Bar 
+                  options={{
+                    ...options,
+                    maintainAspectRatio: false,
+                    responsive: true,
+                  }} 
+                  data={chartData[activeTab]} 
+                />
+              ) : (
+                <Line 
+                  options={{
+                    ...options,
+                    maintainAspectRatio: false,
+                    responsive: true,
+                  }} 
+                  data={chartData[activeTab]} 
+                />
+              )
             )}
           </div>
         </div>

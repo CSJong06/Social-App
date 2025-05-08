@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Line } from 'react-chartjs-2';
+import { Line, Bar, Pie } from 'react-chartjs-2';
 import { useAuth } from '../lib/auth';
 import {
   Chart as ChartJS,
@@ -9,6 +9,8 @@ import {
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend
@@ -20,91 +22,12 @@ ChartJS.register(
   LinearScale,
   PointElement,
   LineElement,
+  BarElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend
 );
-
-const chartData = {
-  followers: {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-    datasets: [
-      {
-        label: 'YouTube',
-        data: [12, 19, 15, 25, 22, 30],
-        borderColor: 'rgb(252, 165, 165)',
-        backgroundColor: 'rgba(252, 165, 165, 0.1)',
-        tension: 0.4,
-      },
-      {
-        label: 'Instagram',
-        data: [8, 15, 20, 18, 25, 28],
-        borderColor: 'rgb(244, 114, 182)',
-        backgroundColor: 'rgba(244, 114, 182, 0.1)',
-        tension: 0.4,
-      },
-      {
-        label: 'TikTok',
-        data: [100, 200, 300, 400, 500, 600],
-        borderColor: 'rgb(147, 197, 253)',
-        backgroundColor: 'rgba(147, 197, 253, 0.1)',
-        tension: 0.4,
-      }
-    ],
-  },
-  interactions: {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-    datasets: [
-      {
-        label: 'YouTube Likes',
-        data: [120, 150, 180, 190, 210, 250],
-        borderColor: 'rgb(252, 165, 165)',
-        backgroundColor: 'rgba(252, 165, 165, 0.1)',
-        tension: 0.4,
-      },
-      {
-        label: 'Instagram Likes',
-        data: [80, 100, 130, 150, 180, 200],
-        borderColor: 'rgb(244, 114, 182)',
-        backgroundColor: 'rgba(244, 114, 182, 0.1)',
-        tension: 0.4,
-      },
-      {
-        label: 'TikTok Likes',
-        data: [1000, 2000, 3000, 4000, 5000, 6000],
-        borderColor: 'rgb(147, 197, 253)',
-        backgroundColor: 'rgba(147, 197, 253, 0.1)',
-        tension: 0.4,
-      }
-    ],
-  },
-  impressions: {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-    datasets: [
-      {
-        label: 'YouTube Views',
-        data: [1000, 1500, 2000, 2500, 3000, 3500],
-        borderColor: 'rgb(252, 165, 165)',
-        backgroundColor: 'rgba(252, 165, 165, 0.1)',
-        tension: 0.4,
-      },
-      {
-        label: 'Instagram Reach',
-        data: [500, 800, 1000, 1200, 1500, 1800],
-        borderColor: 'rgb(244, 114, 182)',
-        backgroundColor: 'rgba(244, 114, 182, 0.1)',
-        tension: 0.4,
-      },
-      {
-        label: 'TikTok Views',
-        data: [5000, 10000, 15000, 20000, 25000, 30000],
-        borderColor: 'rgb(147, 197, 253)',
-        backgroundColor: 'rgba(147, 197, 253, 0.1)',
-        tension: 0.4,
-      }
-    ],
-  }
-};
 
 const options = {
   responsive: true,
@@ -134,16 +57,196 @@ export default function Dashboard() {
     instagram: false,
     tiktok: false
   });
+  const [chartData, setChartData] = useState({
+    followers: { labels: [], datasets: [] },
+    interactions: { labels: [], datasets: [] },
+    impressions: { labels: [], datasets: [] }
+  });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     setIsClient(true);
-    const savedConnections = localStorage.getItem('socialConnections');
-    if (savedConnections) {
-      setConnections(JSON.parse(savedConnections));
-    }
+    const fetchConnections = async () => {
+      try {
+        const response = await fetch('/api/users/me');
+        if (response.ok) {
+          const data = await response.json();
+          const connectedPlatforms = data.connectedPlatforms || [];
+          setConnections({
+            youtube: connectedPlatforms.includes('youtube'),
+            instagram: connectedPlatforms.includes('instagram'),
+            tiktok: connectedPlatforms.includes('tiktok')
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching connections:', error);
+      }
+    };
+    fetchConnections();
   }, []);
 
-  if (loading || !isClient) {
+  // Fetch analytics data when connections change
+  useEffect(() => {
+    const fetchAnalyticsData = async () => {
+      if (!isClient) return;
+      
+      setIsLoading(true);
+      try {
+        const platforms = ['youtube', 'instagram', 'tiktok'];
+        const analyticsData = {};
+
+        // Fetch data for each connected platform
+        for (const platform of platforms) {
+          if (connections[platform]) {
+            console.log(`Fetching data for ${platform}...`);
+            const response = await fetch(`/api/analytics/${platform}`);
+            if (response.ok) {
+              const data = await response.json();
+              console.log(`${platform} data:`, data);
+              analyticsData[platform] = data.analytics || [];
+            }
+          }
+        }
+
+        // Transform data for charts
+        const transformedData = {
+          followers: {
+            labels: [],
+            datasets: []
+          },
+          interactions: {
+            labels: [],
+            datasets: []
+          },
+          impressions: {
+            labels: [],
+            datasets: [{
+              data: [],
+              backgroundColor: [],
+              borderColor: [],
+              borderWidth: 1
+            }]
+          }
+        };
+
+        // Process data for each platform
+        Object.entries(analyticsData).forEach(([platform, data]) => {
+          if (data.length === 0) return;
+
+          console.log(`Processing ${platform} data:`, data);
+
+          // Get unique dates across all platforms
+          const dates = [...new Set(data.map(item => {
+            const date = new Date(item.date);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          }))].sort();
+
+          // Add labels if not already present
+          if (transformedData.followers.labels.length === 0) {
+            transformedData.followers.labels = dates;
+            transformedData.interactions.labels = dates;
+          }
+
+          // Add datasets for each metric
+          if (platform === 'youtube' && connections.youtube) {
+            console.log('Adding YouTube datasets...');
+            transformedData.followers.datasets.push({
+              label: 'YouTube Subscribers',
+              data: data.map(item => item.subscribers),
+              borderColor: 'rgb(220, 38, 38)',
+              backgroundColor: 'rgba(220, 38, 38, 0.1)',
+              tension: 0.4
+            });
+            transformedData.interactions.datasets.push({
+              label: 'YouTube Likes',
+              data: data.map(item => item.likes),
+              borderColor: 'rgb(185, 28, 28)',
+              backgroundColor: 'rgba(185, 28, 28, 0.8)',
+              tension: 0.4
+            });
+            // Add to pie chart data
+            const totalViews = data.reduce((sum, item) => sum + item.views, 0);
+            transformedData.impressions.labels.push('YouTube Views');
+            transformedData.impressions.datasets[0].data.push(totalViews);
+            transformedData.impressions.datasets[0].backgroundColor.push('rgba(220, 38, 38, 0.8)');
+            transformedData.impressions.datasets[0].borderColor.push('rgb(220, 38, 38)');
+          } else if (platform === 'instagram' && connections.instagram) {
+            transformedData.followers.datasets.push({
+              label: 'Instagram Followers',
+              data: data.map(item => item.followers),
+              borderColor: 'rgb(244, 114, 182)',
+              backgroundColor: 'rgba(244, 114, 182, 0.1)',
+              tension: 0.4
+            });
+            transformedData.interactions.datasets.push({
+              label: 'Instagram Likes',
+              data: data.map(item => item.likes),
+              borderColor: 'rgb(219, 39, 119)',
+              backgroundColor: 'rgba(219, 39, 119, 0.8)',
+              tension: 0.4
+            });
+            // Add to pie chart data
+            const totalReach = data.reduce((sum, item) => sum + item.reach, 0);
+            transformedData.impressions.labels.push('Instagram Reach');
+            transformedData.impressions.datasets[0].data.push(totalReach);
+            transformedData.impressions.datasets[0].backgroundColor.push('rgba(244, 114, 182, 0.8)');
+            transformedData.impressions.datasets[0].borderColor.push('rgb(244, 114, 182)');
+          } else if (platform === 'tiktok' && connections.tiktok) {
+            transformedData.followers.datasets.push({
+              label: 'TikTok Followers',
+              data: data.map(item => item.followers),
+              borderColor: 'rgb(75, 85, 99)',
+              backgroundColor: 'rgba(75, 85, 99, 0.1)',
+              tension: 0.4
+            });
+            transformedData.interactions.datasets.push({
+              label: 'TikTok Likes',
+              data: data.map(item => item.likes),
+              borderColor: 'rgb(55, 65, 81)',
+              backgroundColor: 'rgba(55, 65, 81, 0.8)',
+              tension: 0.4
+            });
+            // Add to pie chart data
+            const totalViews = data.reduce((sum, item) => sum + item.views, 0);
+            transformedData.impressions.labels.push('TikTok Views');
+            transformedData.impressions.datasets[0].data.push(totalViews);
+            transformedData.impressions.datasets[0].backgroundColor.push('rgba(75, 85, 99, 0.8)');
+            transformedData.impressions.datasets[0].borderColor.push('rgb(75, 85, 99)');
+          }
+        });
+
+        console.log('Final transformed data:', transformedData);
+        setChartData(transformedData);
+      } catch (error) {
+        console.error('Error fetching analytics data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAnalyticsData();
+  }, [connections, isClient]);
+
+  // Listen for platform updates
+  useEffect(() => {
+    const handlePlatformUpdate = async () => {
+      const response = await fetch('/api/users/me');
+      if (response.ok) {
+        const data = await response.json();
+        const connectedPlatforms = data.connectedPlatforms || [];
+        setConnections({
+          youtube: connectedPlatforms.includes('youtube'),
+          instagram: connectedPlatforms.includes('instagram'),
+          tiktok: connectedPlatforms.includes('tiktok')
+        });
+      }
+    };
+
+    window.addEventListener('platformUpdate', handlePlatformUpdate);
+    return () => window.removeEventListener('platformUpdate', handlePlatformUpdate);
+  }, []);
+
+  if (loading || !isClient || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -226,18 +329,77 @@ export default function Dashboard() {
         <div className="p-6">
           <div className="w-full h-[400px] max-h-[400px] overflow-hidden">
             {isClient && (
-              <Line 
-                options={options} 
-                data={{
-                  ...chartData[activeTab],
-                  datasets: chartData[activeTab].datasets.filter((dataset) => {
-                    if (dataset.label.toLowerCase().includes('youtube')) return connections.youtube;
-                    if (dataset.label.toLowerCase().includes('instagram')) return connections.instagram;
-                    if (dataset.label.toLowerCase().includes('tiktok')) return connections.tiktok;
-                    return false;
-                  })
-                }} 
-              />
+              activeTab === 'interactions' ? (
+                <Bar 
+                  options={options} 
+                  data={{
+                    ...chartData[activeTab],
+                    datasets: chartData[activeTab].datasets.filter((dataset) => {
+                      if (dataset.label.toLowerCase().includes('youtube')) return connections.youtube;
+                      if (dataset.label.toLowerCase().includes('instagram')) return connections.instagram;
+                      if (dataset.label.toLowerCase().includes('tiktok')) return connections.tiktok;
+                      return false;
+                    })
+                  }} 
+                />
+              ) : activeTab === 'impressions' ? (
+                <Pie 
+                  options={{
+                    ...options,
+                    plugins: {
+                      ...options.plugins,
+                      legend: {
+                        position: 'right',
+                      }
+                    }
+                  }} 
+                  data={{
+                    labels: chartData[activeTab].labels.filter((label) => {
+                      if (label.toLowerCase().includes('youtube')) return connections.youtube;
+                      if (label.toLowerCase().includes('instagram')) return connections.instagram;
+                      if (label.toLowerCase().includes('tiktok')) return connections.tiktok;
+                      return false;
+                    }),
+                    datasets: [{
+                      data: chartData[activeTab].datasets[0].data.filter((_, index) => {
+                        const label = chartData[activeTab].labels[index];
+                        if (label.toLowerCase().includes('youtube')) return connections.youtube;
+                        if (label.toLowerCase().includes('instagram')) return connections.instagram;
+                        if (label.toLowerCase().includes('tiktok')) return connections.tiktok;
+                        return false;
+                      }),
+                      backgroundColor: chartData[activeTab].datasets[0].backgroundColor.filter((_, index) => {
+                        const label = chartData[activeTab].labels[index];
+                        if (label.toLowerCase().includes('youtube')) return connections.youtube;
+                        if (label.toLowerCase().includes('instagram')) return connections.instagram;
+                        if (label.toLowerCase().includes('tiktok')) return connections.tiktok;
+                        return false;
+                      }),
+                      borderColor: chartData[activeTab].datasets[0].borderColor.filter((_, index) => {
+                        const label = chartData[activeTab].labels[index];
+                        if (label.toLowerCase().includes('youtube')) return connections.youtube;
+                        if (label.toLowerCase().includes('instagram')) return connections.instagram;
+                        if (label.toLowerCase().includes('tiktok')) return connections.tiktok;
+                        return false;
+                      }),
+                      borderWidth: 1
+                    }]
+                  }} 
+                />
+              ) : (
+                <Line 
+                  options={options} 
+                  data={{
+                    ...chartData[activeTab],
+                    datasets: chartData[activeTab].datasets.filter((dataset) => {
+                      if (dataset.label.toLowerCase().includes('youtube')) return connections.youtube;
+                      if (dataset.label.toLowerCase().includes('instagram')) return connections.instagram;
+                      if (dataset.label.toLowerCase().includes('tiktok')) return connections.tiktok;
+                      return false;
+                    })
+                  }} 
+                />
+              )
             )}
           </div>
         </div>

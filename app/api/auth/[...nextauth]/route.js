@@ -3,7 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { compare } from 'bcryptjs';
 import clientPromise from '@/app/lib/mongodb';
 
-const handler = NextAuth({
+export const authOptions = {
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -58,6 +58,7 @@ const handler = NextAuth({
       return token;
     }
   }
-});
+};
 
+const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST }; 
