@@ -26,6 +26,7 @@ export function AuthProvider({ children }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -34,9 +35,12 @@ export function AuthProvider({ children }) {
       }
 
       const data = await response.json();
-      document.cookie = `auth-token=${data.token}; path=/; max-age=2592000`; // 30 days
+      
+      document.cookie = `auth-token=${data.token}; path=/; max-age=2592000; secure; samesite=strict`;
+      
       setUser({ isAuthenticated: true });
-      router.push('/dashboard');
+      
+      router.replace('/dashboard');
     } catch (error) {
       throw error;
     }
